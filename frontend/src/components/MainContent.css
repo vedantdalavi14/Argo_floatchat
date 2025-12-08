@@ -1,0 +1,80 @@
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
+    width: 100%;
+}
+
+/* Header Section of Main Content */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    /* Reduced from 1rem */
+}
+
+.content-title {
+    font-size: 1rem;
+    /* Reduced from 1.25rem */
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Tabs */
+.tabs-container {
+    background-color: var(--bg-primary);
+    padding: 0.2rem;
+    /* Slightly tighter */
+    border-radius: 0.5rem;
+    display: flex;
+    margin-bottom: 0.75rem;
+    /* Reduced from 1rem */
+    border: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    /* Reduced from 0.75rem */
+
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    /* Added explicit smaller font size */
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background-color: var(--bg-card);
+    /* Or simpler highlight */
+    color: var(--text-primary);
+    /* The image shows the active tab as very distinct, maybe lighter bg */
+    background-color: #1e293b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-container {
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+    /* Scroll inside view if needed */
+    display: flex;
+    flex-direction: column;
+}

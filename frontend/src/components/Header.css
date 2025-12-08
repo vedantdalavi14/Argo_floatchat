@@ -1,0 +1,97 @@
+.header {
+    height: 60px;
+    /* Reduced from 80px */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    /* Reduced from 1.5rem */
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+}
+
+.stats-container {
+    display: flex;
+    gap: 0.75rem;
+    /* Reduced from 1rem */
+}
+
+.stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    /* Reduced from 0.5rem */
+    background-color: var(--bg-card);
+    padding: 0.25rem 0.75rem;
+    /* Reduced from 0.5rem 1rem */
+    border-radius: 2rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    /* Reduced from 0.875rem */
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.stat-icon {
+    width: 14px;
+    /* Reduced specific size logic if needed, usually handles by lucide size prop */
+    height: 14px;
+    color: var(--accent-blue);
+}
+
+/* ... colors ... */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    /* Reduced from 1rem */
+}
+
+.region-btn {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.25rem 0.75rem;
+    /* Reduced padding */
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    /* Smaller font */
+}
+
+.incois-badge {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border: 1px solid #4ade80;
+    padding: 0.15rem 0.5rem;
+    /* Compact badge */
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.incois-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #4ade80;
+    border-radius: 50%;
+}
+
+.icon-action {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.icon-action:hover {
+    color: var(--text-primary);
+}
