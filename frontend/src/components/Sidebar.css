@@ -200,3 +200,34 @@
 .send-btn:hover {
     background-color: var(--accent-cyan);
 }
+
+/* Markdown Styles */
+.markdown-content p {
+    margin-bottom: 0.5rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.markdown-content li {
+    margin-bottom: 0.25rem;
+}
+
+.markdown-content strong {
+    font-weight: 600;
+    color: var(--accent-cyan);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

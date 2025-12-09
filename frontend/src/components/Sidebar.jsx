@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Hexagon, Mic, Send, Lightbulb, Copy, User } from 'lucide-react';
 import './Sidebar.css';
 
@@ -85,7 +86,7 @@ const Sidebar = () => {
             <div className="chat-container">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={msg.type === 'bot' ? 'message-bot' : 'message-user'}>
-                        <p>{msg.text}</p>
+                        <div className="markdown-content"><ReactMarkdown>{msg.text}</ReactMarkdown></div>
                         <div className="message-meta">
                             <span>{msg.time}</span>
                             {msg.type === 'bot' && <Copy size={12} className="copy-icon" />}
@@ -104,18 +105,20 @@ const Sidebar = () => {
             </div>
 
             {/* Suggestions */}
-            <div className="suggestions">
-                <h3><Lightbulb size={16} color="var(--accent-cyan)" /> Try asking:</h3>
-                <div className="suggestion-chip" onClick={() => handleSuggestion("What is the average temperature?")}>
-                    What is the average temperature?
+            {messages.length <= 1 && (
+                <div className="suggestions">
+                    <h3><Lightbulb size={16} color="var(--accent-cyan)" /> Try asking:</h3>
+                    <div className="suggestion-chip" onClick={() => handleSuggestion("What is the average temperature?")}>
+                        What is the average temperature?
+                    </div>
+                    <div className="suggestion-chip" onClick={() => handleSuggestion("Where is the float now?")}>
+                        Where is the float now?
+                    </div>
+                    <div className="suggestion-chip" onClick={() => handleSuggestion("What is the salinity?")}>
+                        What is the salinity?
+                    </div>
                 </div>
-                <div className="suggestion-chip" onClick={() => handleSuggestion("Where is the float now?")}>
-                    Where is the float now?
-                </div>
-                <div className="suggestion-chip" onClick={() => handleSuggestion("What is the salinity?")}>
-                    What is the salinity?
-                </div>
-            </div>
+            )}
 
             {/* Input Area */}
             <div className="chat-input-area">

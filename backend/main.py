@@ -271,6 +271,26 @@ def download_data(months: Optional[List[int]] = Query(None)):
 # Chat Logic
 from pydantic import BaseModel
 import re
+import os
+from dotenv import load_dotenv
+from mistralai import Mistral  # Updated SDK import
+from pathlib import Path
+
+# Explicitly load .env from the backend directory
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+mistral_client = None
+
+if MISTRAL_API_KEY:
+    try:
+        mistral_client = Mistral(api_key=MISTRAL_API_KEY)
+        print("Mistral API Key loaded successfully.")
+    except Exception as e:
+        print(f"Error initializing Mistral client: {e}")
+else:
+    print(f"Warning: Mistral API Key not found at {env_path}")
 
 class ChatRequest(BaseModel):
     message: str
@@ -283,120 +303,74 @@ month_map = {
 }
 
 @app.post("/api/chat")
-def chat_with_data(request: ChatRequest):
+async def chat_with_data(request: ChatRequest):
     """
-    Simple keyword-based chat interface.
+    Hybrid Chat: Uses Mistral LLM if available, falls back to keyword matching.
     """
+    print(f"DEBUG: Processing chat request... Client exists: {mistral_client is not None}")
     msg = request.message.lower()
     
-    # Check for comparison query
-    if "diff" in msg or "compare" in msg or "between" in msg:
-        # 1. Identify Parameter
-        param = "temp" # default
-        col = "avg_temp_overall"
-        unit = "°C"
-        
-        if "salinity" in msg or "salt" in msg:
-            param = "salinity"
-            col = "avg_sal_overall"
-            unit = "PSU"
-        elif "density" in msg:
-            param = "density"
-            col = "avg_density_overall"
-            unit = "kg/m³"
-        elif "oxygen" in msg:
-            param = "oxygen"
-            col = "avg_doxy_overall"
-            unit = "µmol/kg"
+    # --- LLM Integration ---
+    if mistral_client and not df.empty:
+        try:
+            # 1. Identify relevant data subset based on keywords
+            # If valid months mentioned, filter by them
+            found_months = []
+            for name, num in month_map.items():
+                if re.search(r'\b' + name + r'\b', msg):
+                    if num not in found_months: found_months.append(num)
             
-        # 2. Identify Months
-        found_months = []
-        for name, num in month_map.items():
-            # Use regex to find whole words to avoid 'may' inside 'maybe' etc.
-            if re.search(r'\b' + name + r'\b', msg):
-                if num not in found_months:
-                    found_months.append(num)
-        
-        if len(found_months) >= 2:
-            m1, m2 = found_months[0], found_months[1]
+            context_df = df.copy()
+            if found_months:
+                 context_df = context_df[context_df['month'].isin(found_months)]
             
-            # Helper to get name
-            def get_month_name(m):
-                name = [k for k,v in month_map.items() if v == m and len(k)>3]
-                return name[0].capitalize() if name else f"Month {m}"
+            # Select relevant columns to reduce token usage
+            cols_to_use = ['date', 'month', 'avg_latitude', 'avg_longitude']
             
-            name1 = get_month_name(m1)
-            name2 = get_month_name(m2)
-
-            # Check if "all" parameters requested
-            if "all" in msg:
-                params = [
-                    ("Temp", "avg_temp_overall", "°C"),
-                    ("Salinity", "avg_sal_overall", "PSU"),
-                    ("Density", "avg_density_overall", "kg/m³"),
-                    ("Oxygen", "avg_doxy_overall", "µmol/kg")
-                ]
-                
-                replies = []
-                replies.append(f"Comparing all parameters between {name1} and {name2}:")
-                
-                for p_name, p_col, p_unit in params:
-                    if p_col not in df.columns: continue
-                    v1 = df[df['month'] == m1][p_col].mean()
-                    v2 = df[df['month'] == m2][p_col].mean()
-                    
-                    if pd.isna(v1) or pd.isna(v2):
-                        replies.append(f"- {p_name}: Data missing.")
-                        continue
-                        
-                    diff = v2 - v1
-                    direction = "higher" if diff > 0 else "lower"
-                    replies.append(f"- {p_name}: {v1:.2f} vs {v2:.2f} (Diff: {abs(diff):.2f}{p_unit} {direction} in {name2})")
-                
-                return {"reply": "\n".join(replies)}
-
-            # Single Parameter Comparison (Existing Logic)
-            # Get data
-            val1 = df[df['month'] == m1][col].mean()
-            val2 = df[df['month'] == m2][col].mean()
+            # Add specific parameter columns
+            include_all = "all" in msg or "compare" in msg or "diff" in msg
+            if include_all or "temp" in msg: cols_to_use.append('avg_temp_overall')
+            if include_all or "salinity" in msg or "salt" in msg: cols_to_use.append('avg_sal_overall')
+            if include_all or "density" in msg: cols_to_use.append('avg_density_overall')
+            if include_all or "oxygen" in msg: cols_to_use.append('avg_doxy_overall')
             
-            if pd.isna(val1) or pd.isna(val2):
-                return {"reply": f"I couldn't find data for one of those months to compare {param}."}
-                
-            diff = val2 - val1
-            direction = "higher" if diff > 0 else "lower"
+            # If generic query, fallback to key status columns
+            if len(cols_to_use) == 4: # Only base cols added
+                 cols_to_use.extend(['avg_temp_overall', 'avg_sal_overall'])
 
-            return {
-                "reply": f"Comparing {param}: {name1} was {val1:.2f}{unit}, and {name2} was {val2:.2f}{unit}. "
-                         f"The difference is {abs(diff):.2f}{unit} ({direction} in {name2})."
-            }
-    
-    # 1. Temperature query (General)
-    if "temp" in msg:
-        if df.empty: return {"reply": "I have no data loaded yet."}
-        latest = df.iloc[-1]
-        avg_temp = round(df['avg_temp_overall'].mean(), 2)
-        return {"reply": f"The average temperature across all data is {avg_temp}°C. The latest recording on {latest['date']} was {latest['avg_temp_overall']:.2f}°C."}
-    
-    # 2. Salinity query
-    if "salinity" in msg or "salt" in msg:
-        if df.empty: return {"reply": "I have no data loaded yet."}
-        avg_sal = round(df['avg_sal_overall'].mean(), 2)
-        return {"reply": f"The average salinity is {avg_sal} PSU. Salinity affects water density and buoyancy."}
-        
-    # 3. Location/Where query
-    if "where" in msg or "location" in msg or "position" in msg:
-        if df.empty: return {"reply": "I have no data loaded yet."}
-        latest = df.iloc[-1]
-        return {"reply": f"The float is currently located at Lat: {latest['avg_latitude']:.2f}, Lon: {latest['avg_longitude']:.2f} (Indian Ocean)."}
-        
-    # 4. Status query
-    if "status" in msg or "health" in msg:
-         return {"reply": "The float is active and transmitting data. All sensors are reporting nominal status (99.9% QC passed)."}
-         
-    # 5. Jokes/Fun
-    if "hello" in msg or "hi" in msg:
-        return {"reply": "Hello! I am FloatChat. Ask me about ocean temperature, salinity, or the float's location."}
+            # Limit rows
+            data_context = context_df[cols_to_use].to_csv(index=False)
+            
+            prompt = f"""
+            You are an oceanography data assistant. 
+            Context Data (CSV format):
+            {data_context}
+            
+            User Question: {request.message}
+            
+            Instructions:
+            - If the question is about a concept (e.g., "What is this, where this can be any paramtere or related to oceanography?"), briefly define it first.
+            - Then, analyze the provided data to answer specific to the dataset.
+            - Be precise with numbers.
+            - If comparing, calculate valid differences.
+            - Keep answer concise.
+            - IMPORTANT: Format your response clearly using Markdown.
+            - Use Bullet points for lists.
+            - Use Bold for key numbers.
+            - Use Headers (##) for sections.
+            """
+            
+            chat_response = mistral_client.chat.complete(
+                model="mistral-small-latest",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return {"reply": chat_response.choices[0].message.content}
+            
+        except Exception as e:
+            print(f"LLM Error: {e}")
+            return {"reply": f"AI Error details: {str(e)}"}
+            
+    if not MISTRAL_API_KEY:
+        return {"reply": "Mistral API Key is missing. Please configure backend/.env with MISTRAL_API_KEY."}
 
-    # Default
-    return {"reply": "I am not sure about that. Try asking 'What is the temperature?' or 'Where is the float now?'"}
+    return {"reply": "I couldn't process that query or no data context was found."}
